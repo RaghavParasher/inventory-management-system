@@ -3,10 +3,10 @@
 A full-stack, production-ready Inventory and Order Management System built for the Software Engineer technical assessment.
 
 ## 🚀 Live Demo Links
-- **Frontend (Vercel):** [Replace with your Vercel Link]
-- **Backend API (Render):** [Replace with your Render Link]
-- **API Documentation (Swagger):** [Replace with your Render Link]/docs
-- **Docker Hub Image:** [Replace with your Docker Hub Link]
+- **Frontend (Vercel):** https://inventory-management-system-lilac-nine.vercel.app/
+- **Backend API (Render):** https://inventory-backend-api-9aya.onrender.com/
+- **API Documentation (Swagger):** https://inventory-backend-api-9aya.onrender.com/docs
+- **Docker Hub Image:** https://hub.docker.com/repository/docker/raghavparasher/inventory-backend/general
 
 ## 🛠️ Technology Stack
 - **Frontend:** React, Vite, Vanilla CSS (Glassmorphism UI)

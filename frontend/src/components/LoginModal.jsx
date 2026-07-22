@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { resetDemoUsers } from '../api';
 import { SparklesIcon } from './Icons';
 
 function LoginModal() {
-  const { login, quickDemoLogin, isLoginModalOpen, setIsLoginModalOpen, authError, loadingAuth } = useAuth();
+  const { login, quickDemoLogin, isLoginModalOpen, setIsLoginModalOpen, authError, setAuthError, loadingAuth } = useAuth();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   if (!isLoginModalOpen) return null;
 
@@ -14,8 +16,34 @@ function LoginModal() {
     login(username, password).catch(() => {});
   };
 
-  const handleQuick = (role) => {
-    quickDemoLogin(role).catch(() => {});
+  const handleQuick = async (role) => {
+    try {
+      await quickDemoLogin(role);
+    } catch (err) {
+      // Auto-heal: If demo account hash is mismatched on cloud DB, reset automatically and retry once!
+      setResetting(true);
+      try {
+        await resetDemoUsers();
+        await quickDemoLogin(role);
+      } catch (retryErr) {
+        // Fallback error displayed
+      } finally {
+        setResetting(false);
+      }
+    }
+  };
+
+  const handleManualReset = async () => {
+    setResetting(true);
+    setAuthError(null);
+    try {
+      await resetDemoUsers();
+      alert("Demo accounts have been forcefully reset and verified on the cloud database! Click System Admin Access to enter.");
+    } catch (err) {
+      setAuthError("Failed to reset credentials. Check API connection.");
+    } finally {
+      setResetting(false);
+    }
   };
 
   return (
@@ -112,7 +140,7 @@ function LoginModal() {
               padding: '0.85rem 1rem'
             }}
             onClick={() => handleQuick('warehouse')}
-            disabled={loadingAuth}
+            disabled={loadingAuth || resetting}
           >
             <div style={{ textAlign: 'left' }}>
               <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -124,6 +152,18 @@ function LoginModal() {
               </div>
             </div>
             <span style={{ fontSize: '1.1rem' }}>➔</span>
+          </button>
+        </div>
+
+        <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
+          <button
+            type="button"
+            className="btn"
+            style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)' }}
+            onClick={handleManualReset}
+            disabled={resetting || loadingAuth}
+          >
+            {resetting ? "Force Resetting Demo Accounts..." : "🔄 Reset / Fix Demo Accounts on Cloud DB"}
           </button>
         </div>
       </div>

@@ -30,23 +30,31 @@ def seed_database(db: Session):
     Base.metadata.create_all(bind=engine)
     ensure_schema_columns(engine)
 
-    # 1. Seed Users (Admin and Warehouse Staff) - Committed independently
+    # 1. Seed Users (Admin and Warehouse Staff) - Force update if hash mismatched or missing
     try:
-        if not db.query(models.User).filter(models.User.username == "admin").first():
+        admin_user = db.query(models.User).filter(models.User.username == "admin").first()
+        if not admin_user:
             admin_user = models.User(
                 username="admin",
                 hashed_password=auth.get_password_hash("admin123"),
                 role="admin"
             )
             db.add(admin_user)
+        else:
+            admin_user.hashed_password = auth.get_password_hash("admin123")
+            admin_user.role = "admin"
         
-        if not db.query(models.User).filter(models.User.username == "warehouse").first():
+        warehouse_user = db.query(models.User).filter(models.User.username == "warehouse").first()
+        if not warehouse_user:
             warehouse_user = models.User(
                 username="warehouse",
                 hashed_password=auth.get_password_hash("stock2026"),
                 role="warehouse"
             )
             db.add(warehouse_user)
+        else:
+            warehouse_user.hashed_password = auth.get_password_hash("stock2026")
+            warehouse_user.role = "warehouse"
         
         db.commit()
     except Exception as e:

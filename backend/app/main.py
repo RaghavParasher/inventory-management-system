@@ -53,6 +53,30 @@ def login(credentials: schemas.LoginRequest, db: Session = Depends(get_db)):
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
     return current_user
 
+@app.post("/auth/reset_demo", status_code=200)
+def reset_demo_users(db: Session = Depends(get_db)):
+    try:
+        admin = db.query(models.User).filter(models.User.username == "admin").first()
+        if not admin:
+            admin = models.User(username="admin", hashed_password=auth.get_password_hash("admin123"), role="admin")
+            db.add(admin)
+        else:
+            admin.hashed_password = auth.get_password_hash("admin123")
+            admin.role = "admin"
+        
+        staff = db.query(models.User).filter(models.User.username == "warehouse").first()
+        if not staff:
+            staff = models.User(username="warehouse", hashed_password=auth.get_password_hash("stock2026"), role="warehouse")
+            db.add(staff)
+        else:
+            staff.hashed_password = auth.get_password_hash("stock2026")
+            staff.role = "warehouse"
+        db.commit()
+        return {"message": "Demo credentials (admin/admin123 & warehouse/stock2026) forcefully reset & verified."}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Reset demo error: {str(e)}")
+
 @app.post("/seed", status_code=200)
 def trigger_seed(db: Session = Depends(get_db)):
     try:

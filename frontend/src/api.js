@@ -15,6 +15,7 @@ api.interceptors.request.use((config) => {
 
 export const loginUser = (credentials) => api.post('/auth/login', credentials).then(res => res.data);
 export const triggerSeed = () => api.post('/seed').then(res => res.data);
+export const resetDemoUsers = () => api.post('/auth/reset_demo').then(res => res.data);
 
 export const getProducts = () => api.get('/products').then(res => res.data);
 export const getProduct = (id) => api.get(`/products/${id}`).then(res => res.data);

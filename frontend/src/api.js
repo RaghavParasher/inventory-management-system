@@ -4,6 +4,18 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
 });
 
+// Automatically inject JWT bearer token if present in localStorage
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const loginUser = (credentials) => api.post('/auth/login', credentials).then(res => res.data);
+export const triggerSeed = () => api.post('/seed').then(res => res.data);
+
 export const getProducts = () => api.get('/products').then(res => res.data);
 export const getProduct = (id) => api.get(`/products/${id}`).then(res => res.data);
 export const createProduct = (data) => api.post('/products', data).then(res => res.data);

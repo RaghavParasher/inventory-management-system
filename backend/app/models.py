@@ -3,13 +3,22 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 from .database import Base
 
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, nullable=False) # "admin" or "warehouse"
+
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True, nullable=False)
     sku = Column(String, unique=True, index=True, nullable=False)
+    category = Column(String, default="General", nullable=False)
     price = Column(Float, nullable=False)
     quantity = Column(Integer, nullable=False)
+    image_url = Column(String, nullable=True)
 
 class Customer(Base):
     __tablename__ = "customers"

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getOrders, createOrder, deleteOrder, getCustomers, getProducts } from '../api';
 import { PlusIcon, TrashIcon, OrdersIcon, DollarSignIcon } from '../components/Icons';
+import { useAuth } from '../context/AuthContext';
 
 function Orders() {
+  const { isAdmin, isWarehouse, setIsLoginModalOpen } = useAuth();
   const [orders, setOrders] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -78,8 +80,15 @@ function Orders() {
   };
 
   const handleDelete = (id) => {
+    if (!isAdmin) {
+      alert("Executive Admin authorization required to cancel orders and process stock refunds. Please switch to Admin role.");
+      setIsLoginModalOpen(true);
+      return;
+    }
     if (window.confirm("Are you sure you want to cancel and remove this order? Inventory will be restored automatically.")) {
-      deleteOrder(id).then(fetchData).catch(err => console.error(err));
+      deleteOrder(id).then(fetchData).catch(err => {
+        alert(err.response?.data?.detail || "Permission denied cancelling order.");
+      });
     }
   };
 
@@ -90,7 +99,6 @@ function Orders() {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  // Calculate live modal total
   const estimatedTotal = orderItems.reduce((sum, item) => {
     if (!item.product_id) return sum;
     const prod = products.find(p => p.id === parseInt(item.product_id));
@@ -167,7 +175,7 @@ function Orders() {
                     </div>
                   </td>
                   <td style={{ fontWeight: 700, fontSize: '1.05rem', color: '#34d399' }}>
-                    ${o.total_amount.toFixed(2)}
+                    ${(o.total_amount || 0).toFixed(2)}
                   </td>
                   <td style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                     {new Date(o.created_at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
@@ -184,7 +192,12 @@ function Orders() {
                   </td>
                   <td style={{ textAlign: 'right' }}>
                     <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
-                      <button className="action-icon-btn danger" title="Cancel & Refund Order" onClick={() => handleDelete(o.id)}>
+                      <button 
+                        className="action-icon-btn danger" 
+                        title={isAdmin ? "Cancel & Refund Order" : "🔒 Executive Admin Required to Cancel"}
+                        style={!isAdmin ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                        onClick={() => handleDelete(o.id)}
+                      >
                         <TrashIcon size={16} />
                       </button>
                     </div>

@@ -1,25 +1,32 @@
 import React, { useState, useEffect } from 'react';
-import { getProducts, getCustomers, getOrders } from '../api';
+import { getProducts, getCustomers, getOrders, triggerSeed } from '../api';
 import { ProductsIcon, CustomersIcon, OrdersIcon, DollarSignIcon, AlertCircleIcon, CheckCircleIcon, TrendingUpIcon } from '../components/Icons';
+import { useAuth } from '../context/AuthContext';
 
 function Dashboard() {
-  const [stats, setStats] = useState({ products: 0, customers: 0, orders: 0, revenue: 0, inventoryValue: 0 });
+  const { user, isAdmin, isWarehouse } = useAuth();
+  const [stats, setStats] = useState({ products: 0, customers: 0, orders: 0, revenue: 0, inventoryValue: 0, totalUnits: 0 });
   const [productsList, setProductsList] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
+  const [seedMessage, setSeedMessage] = useState(null);
 
-  useEffect(() => {
+  const fetchDashboardData = () => {
+    setLoading(true);
     Promise.all([getProducts(), getCustomers(), getOrders()])
       .then(([products, customers, orders]) => {
         const totalRevenue = orders.reduce((acc, o) => acc + (o.total_amount || 0), 0);
         const totalInvValue = products.reduce((acc, p) => acc + ((p.price || 0) * (p.quantity || 0)), 0);
+        const totalUnits = products.reduce((acc, p) => acc + (p.quantity || 0), 0);
 
         setStats({
           products: products.length,
           customers: customers.length,
           orders: orders.length,
           revenue: totalRevenue,
-          inventoryValue: totalInvValue
+          inventoryValue: totalInvValue,
+          totalUnits: totalUnits
         });
         
         setProductsList(products);
@@ -28,7 +35,27 @@ function Dashboard() {
       })
       .catch(err => console.error("Error fetching dashboard data", err))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
   }, []);
+
+  const handleTriggerSeed = () => {
+    setSeeding(true);
+    setSeedMessage(null);
+    triggerSeed()
+      .then(() => {
+        setSeedMessage("Successfully seeded 55+ products, 15 customers, and 32+ orders!");
+        fetchDashboardData();
+      })
+      .catch(err => {
+        setSeedMessage("Error seeding database. Verify API status.");
+      })
+      .finally(() => {
+        setSeeding(false);
+      });
+  };
 
   if (loading) {
     return (
@@ -49,32 +76,59 @@ function Dashboard() {
     <div>
       <div className="page-header">
         <div className="page-title-group">
-          <h2>Dashboard Analytics</h2>
-          <p className="page-subtitle">Real-time overview of your inventory metrics and order valuation.</p>
+          <h2>Dashboard Analytics {isWarehouse && <span className="badge badge-warning" style={{ fontSize: '0.75rem', verticalAlign: 'middle' }}>📦 Logistics Mode</span>}</h2>
+          <p className="page-subtitle">
+            {isWarehouse 
+              ? "Real-time logistics tracking, unit thresholds, and physical warehouse distribution."
+              : "Real-time overview of your inventory metrics and executive order valuation."}
+          </p>
         </div>
+        
+        {productsList.length < 50 && (
+          <button 
+            className="btn btn-primary" 
+            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: '1px solid #34d399' }}
+            onClick={handleTriggerSeed}
+            disabled={seeding}
+          >
+            <span>{seeding ? "Populating Database..." : "🌱 Auto-Seed 55+ Demo Products"}</span>
+          </button>
+        )}
       </div>
 
+      {seedMessage && (
+        <div className="alert alert-success" style={{ marginBottom: '1.5rem', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #34d399', color: '#fff' }}>
+          {seedMessage}
+        </div>
+      )}
+
       <div className="dashboard-grid">
+        {/* Card 1: Revenue or Total Units */}
         <div className="glass-card stat-card">
           <div className="stat-content">
-            <span className="stat-label">Total Revenue</span>
-            <div className="stat-value">${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+            <span className="stat-label">{isWarehouse ? "Physical Inventory Units" : "Total Revenue"}</span>
+            <div className="stat-value">
+              {isWarehouse ? stats.totalUnits.toLocaleString() : `$${stats.revenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            </div>
             <div className="stat-trend trend-positive">
               <TrendingUpIcon size={14} />
-              <span>+18.4% from last month</span>
+              <span>{isWarehouse ? "Active warehouse capacity" : "+18.4% from last month"}</span>
             </div>
           </div>
-          <div className="stat-icon-wrapper icon-purple">
-            <DollarSignIcon size={24} />
+          <div className={`stat-icon-wrapper ${isWarehouse ? 'icon-amber' : 'icon-purple'}`}>
+            {isWarehouse ? <ProductsIcon size={24} /> : <DollarSignIcon size={24} />}
           </div>
         </div>
 
+        {/* Card 2: Active Products */}
         <div className="glass-card stat-card">
           <div className="stat-content">
             <span className="stat-label">Active Products</span>
             <div className="stat-value">{stats.products}</div>
             <div className="stat-trend" style={{ color: 'var(--text-secondary)' }}>
-              <span>Valuation: ${stats.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              <span>
+                {isWarehouse ? "Registered SKU listings" : `Valuation: $${stats.inventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+              </span>
             </div>
           </div>
           <div className="stat-icon-wrapper icon-emerald">
@@ -82,13 +136,14 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Card 3: Customers or Active Suppliers */}
         <div className="glass-card stat-card">
           <div className="stat-content">
             <span className="stat-label">Total Customers</span>
             <div className="stat-value">{stats.customers}</div>
             <div className="stat-trend trend-positive">
               <CheckCircleIcon size={14} />
-              <span>Active account registry</span>
+              <span>{isWarehouse ? "Verified client accounts" : "Active account registry"}</span>
             </div>
           </div>
           <div className="stat-icon-wrapper icon-amber">
@@ -96,6 +151,7 @@ function Dashboard() {
           </div>
         </div>
 
+        {/* Card 4: Orders Placed */}
         <div className="glass-card stat-card">
           <div className="stat-content">
             <span className="stat-label">Total Orders Placed</span>
@@ -158,8 +214,9 @@ function Dashboard() {
               <thead>
                 <tr>
                   <th>Product Details</th>
+                  <th>Category</th>
                   <th>SKU Identifier</th>
-                  <th>Unit Price</th>
+                  {!isWarehouse && <th>Unit Price</th>}
                   <th>Stock Status</th>
                   <th>Capacity Meter</th>
                 </tr>
@@ -171,8 +228,9 @@ function Dashboard() {
                   return (
                     <tr key={p.id}>
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{p.name}</td>
+                      <td><span className="badge" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>{p.category || 'General'}</span></td>
                       <td><span className="sku-chip">{p.sku}</span></td>
-                      <td>${p.price.toFixed(2)}</td>
+                      {!isWarehouse && <td>${p.price.toFixed(2)}</td>}
                       <td>
                         {isDepleted ? (
                           <span className="badge badge-danger">

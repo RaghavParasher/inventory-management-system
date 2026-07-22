@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { getCustomers, createCustomer, deleteCustomer } from '../api';
 import { PlusIcon, TrashIcon, CustomersIcon } from '../components/Icons';
+import { useAuth } from '../context/AuthContext';
 
 function Customers() {
+  const { isAdmin, isWarehouse, setIsLoginModalOpen } = useAuth();
   const [customers, setCustomers] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +20,11 @@ function Customers() {
   };
 
   const handleOpenModal = () => {
+    if (isWarehouse && !isAdmin) {
+      alert("Executive Admin authorization required to register client accounts. Please switch to Admin role.");
+      setIsLoginModalOpen(true);
+      return;
+    }
     setError(null);
     setFormData({ full_name: '', email: '', phone_number: '' });
     setIsModalOpen(true);
@@ -36,8 +43,15 @@ function Customers() {
   };
 
   const handleDelete = (id) => {
+    if (!isAdmin) {
+      alert("Executive Admin authorization required to delete customer profiles.");
+      setIsLoginModalOpen(true);
+      return;
+    }
     if (window.confirm("Are you sure you want to delete this customer record?")) {
-      deleteCustomer(id).then(fetchCustomers).catch(err => console.error(err));
+      deleteCustomer(id).then(fetchCustomers).catch(err => {
+        alert(err.response?.data?.detail || "Permission denied deleting customer.");
+      });
     }
   };
 
@@ -46,6 +60,18 @@ function Customers() {
     const parts = name.trim().split(' ');
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const maskEmail = (email) => {
+    if (!email || isAdmin) return email;
+    const parts = email.split('@');
+    if (parts.length !== 2) return email;
+    return `${parts[0].substring(0, 2)}••••@${parts[1]}`;
+  };
+
+  const maskPhone = (phone) => {
+    if (!phone || isAdmin) return phone;
+    return `+1 (•••) •••-${phone.slice(-4)}`;
   };
 
   const filteredCustomers = customers.filter(c => 
@@ -57,12 +83,16 @@ function Customers() {
     <div>
       <div className="page-header">
         <div className="page-title-group">
-          <h2>Customer Directory</h2>
+          <h2>Customer Directory {isWarehouse && <span className="badge badge-warning" style={{ fontSize: '0.75rem', verticalAlign: 'middle' }}>🔒 PII Masked</span>}</h2>
           <p className="page-subtitle">Maintain client records, email registries, and contact details.</p>
         </div>
-        <button className="btn btn-primary" onClick={handleOpenModal}>
+        <button 
+          className="btn btn-primary" 
+          onClick={handleOpenModal}
+          style={isWarehouse && !isAdmin ? { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)' } : {}}
+        >
           <PlusIcon size={18} />
-          <span>Add Customer</span>
+          <span>{isWarehouse && !isAdmin ? "Add Customer (🔒 Admin)" : "Add Customer"}</span>
         </button>
       </div>
 
@@ -104,9 +134,9 @@ function Customers() {
                   </div>
                 </td>
                 <td>
-                  <span style={{ color: '#a5b4fc' }}>{c.email}</span>
+                  <span style={{ color: '#a5b4fc' }}>{maskEmail(c.email)}</span>
                 </td>
-                <td>{c.phone_number || <span style={{ color: 'var(--text-tertiary)' }}>Not provided</span>}</td>
+                <td>{c.phone_number ? maskPhone(c.phone_number) : <span style={{ color: 'var(--text-tertiary)' }}>Not provided</span>}</td>
                 <td>
                   <span className="badge badge-success">
                     <span className="badge-dot"></span> Verified
@@ -114,7 +144,12 @@ function Customers() {
                 </td>
                 <td style={{ textAlign: 'right' }}>
                   <div className="action-buttons" style={{ justifyContent: 'flex-end' }}>
-                    <button className="action-icon-btn danger" title="Delete Customer" onClick={() => handleDelete(c.id)}>
+                    <button 
+                      className="action-icon-btn danger" 
+                      title={isAdmin ? "Delete Customer" : "🔒 Executive Admin Required to Delete"}
+                      style={!isAdmin ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+                      onClick={() => handleDelete(c.id)}
+                    >
                       <TrashIcon size={16} />
                     </button>
                   </div>

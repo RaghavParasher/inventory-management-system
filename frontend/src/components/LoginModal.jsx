@@ -154,18 +154,6 @@ function LoginModal() {
             <span style={{ fontSize: '1.1rem' }}>➔</span>
           </button>
         </div>
-
-        <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
-          <button
-            type="button"
-            className="btn"
-            style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)' }}
-            onClick={handleManualReset}
-            disabled={resetting || loadingAuth}
-          >
-            {resetting ? "Force Resetting Demo Accounts..." : "🔄 Reset / Fix Demo Accounts on Cloud DB"}
-          </button>
-        </div>
       </div>
     </div>
   );

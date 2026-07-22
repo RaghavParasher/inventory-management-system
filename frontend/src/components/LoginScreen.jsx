@@ -214,18 +214,6 @@ function LoginScreen() {
             {loadingAuth ? 'Verifying Credentials...' : 'Sign In'}
           </button>
         </form>
-
-        <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-          <button
-            type="button"
-            className="btn"
-            style={{ fontSize: '0.75rem', padding: '0.4rem 0.8rem', background: 'rgba(239, 68, 68, 0.12)', color: '#f87171', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: '8px' }}
-            onClick={handleManualReset}
-            disabled={resetting || loadingAuth}
-          >
-            {resetting ? "Force Resetting Demo Accounts..." : "🔄 Reset / Fix Demo Accounts on Cloud DB"}
-          </button>
-        </div>
       </div>
     </div>
   );

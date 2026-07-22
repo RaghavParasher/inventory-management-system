@@ -6,8 +6,9 @@ from typing import List
 from . import models, schemas, crud, auth, seed
 from .database import engine, get_db, SessionLocal
 
-# Create DB tables
+# Create DB tables and run column auto-migration for existing Postgres tables
 models.Base.metadata.create_all(bind=engine)
+seed.ensure_schema_columns(engine)
 
 # Auto-seed initial 55+ products and RBAC accounts on boot if needed
 try:
@@ -54,8 +55,11 @@ def get_me(current_user: models.User = Depends(auth.get_current_user)):
 
 @app.post("/seed", status_code=200)
 def trigger_seed(db: Session = Depends(get_db)):
-    seed.seed_database(db)
-    return {"message": "Database successfully seeded with 55+ products, customers, orders, and RBAC accounts."}
+    try:
+        seed.seed_database(db)
+        return {"message": "Database successfully seeded with 55+ products, customers, orders, and RBAC accounts."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database seed error: {str(e)}")
 
 # --- Product Endpoints ---
 

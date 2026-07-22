@@ -7,6 +7,7 @@ import Orders from './pages/Orders';
 import { DashboardIcon, ProductsIcon, CustomersIcon, OrdersIcon, SparklesIcon } from './components/Icons';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import LoginModal from './components/LoginModal';
+import LoginScreen from './components/LoginScreen';
 import './App.css';
 
 function Sidebar() {
@@ -103,6 +104,12 @@ function Sidebar() {
 }
 
 function AppContent() {
+  const { user } = useAuth();
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
   return (
     <Router>
       <div className="app-container">

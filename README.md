@@ -19,6 +19,10 @@
   A full-stack, state-of-the-art SaaS inventory and logistics portal featuring strict Role-Based Access Control (RBAC), atomic database transactions, glassmorphic UI aesthetics, and instant self-healing cloud credentials.
 </p>
 
+<br/>
+<img src="./mockup.jpg" width="100%" alt="Inventory.sys Dashboard Mockup" />
+<br/>
+
 </div>
 
 ---
